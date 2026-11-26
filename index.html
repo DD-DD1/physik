@@ -12,8 +12,10 @@
 ::-webkit-scrollbar-thumb{background:#c9c7bf;border-radius:8px}
 ::-webkit-scrollbar-thumb:hover{background:#a9a79f}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 "Microsoft YaHei UI","PingFang SC",sans-serif}
-nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;z-index:2}
-nav button{font:inherit;font-size:14px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--fg);cursor:pointer}
+nav{background:var(--bg);border-bottom:1px solid var(--line);padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+nav button,.next button{font:inherit;font-size:14px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--fg);cursor:pointer}
+.next{margin:32px 0 0;text-align:right}
+.next button{font-size:16px;padding:10px 18px;background:var(--acc);border-color:var(--acc);color:#fff}
 nav button.on{background:var(--acc);border-color:var(--acc);color:#fff}
 #stamp{margin-left:auto;font-size:12px;color:var(--mut)}
 #stamp.flash{color:#0F6E56;font-weight:600}
@@ -33,7 +35,7 @@ svg .ts{font-size:12px;fill:#55544f}
 a{color:var(--acc)}
 .sheet + .sheet{margin-top:40px;border-top:3px double var(--line)}
 @media print{
-  nav{display:none}
+  nav,.next{display:none}
   body{background:#fff;font-size:12.5px}
   main{max-width:none;padding:0}
   pre{font-size:11.5px;break-inside:avoid}
@@ -139,13 +141,15 @@ function drawNav() {
   nav.innerHTML = tabs.map(n =>
     '<button data-n="' + encodeURIComponent(n) + '" class="' + (n === cur ? 'on' : '') + '">' +
     esc(n === ALL ? '全部关卡（打印用）' : label(n)) + '</button>').join('') + '<span id="stamp"></span>';
-  nav.querySelectorAll('button').forEach(b => b.onclick = () => {
-    cur = decodeURIComponent(b.dataset.n);
-    location.hash = encodeURIComponent(cur);
-    shownKey = '';
-    window.scrollTo(0, 0);
-    tick();
-  });
+  nav.querySelectorAll('button').forEach(b => b.onclick = () => go(decodeURIComponent(b.dataset.n)));
+}
+
+function go(name) {
+  cur = name;
+  location.hash = encodeURIComponent(cur);
+  shownKey = '';
+  window.scrollTo(0, 0);
+  tick();
 }
 
 function stamp(flash) {
@@ -172,7 +176,12 @@ async function tick() {
   if (key === shownKey) return;
   const first = shownKey === '';
   const parts = await Promise.all(wanted.map(f => getFile(f.name, f.mtime)));
-  document.getElementById('main').innerHTML = parts.map(t => '<section class="sheet">' + render(t) + '</section>').join('');
+  const at = files.findIndex(f => f.name === cur);
+  const next = cur !== ALL && at >= 0 && at + 1 < files.length && files[at + 1].name.startsWith('关卡') ? files[at + 1].name : null;
+  document.getElementById('main').innerHTML =
+    parts.map(t => '<section class="sheet">' + render(t) + '</section>').join('') +
+    (next ? '<p class="next"><button id="next">下一个：' + esc(label(next)) + ' →</button></p>' : '');
+  if (next) document.getElementById('next').onclick = () => go(next);
   shownKey = key;
   stamp(!first);
 }

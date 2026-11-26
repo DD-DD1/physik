@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>物理 第一次考试</title>
+<style>
+:root{--fg:#1f1f1c;--mut:#6b6a64;--line:#d9d7cf;--bg:#fbfaf7;--code:#f1efe8;--acc:#185FA5}
+*{box-sizing:border-box;scrollbar-width:thin;scrollbar-color:#c9c7bf transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#c9c7bf;border-radius:8px}
+::-webkit-scrollbar-thumb:hover{background:#a9a79f}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 "Microsoft YaHei UI","PingFang SC",sans-serif}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;z-index:2}
+nav button{font:inherit;font-size:14px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--fg);cursor:pointer}
+nav button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+#stamp{margin-left:auto;font-size:12px;color:var(--mut)}
+#stamp.flash{color:#0F6E56;font-weight:600}
+main{max-width:900px;margin:0 auto;padding:8px 16px 80px}
+h1{font-size:22px;margin:18px 0 8px}
+h2{font-size:18px;margin:22px 0 6px;padding-top:8px;border-top:1px solid var(--line)}
+h3{font-size:16px;margin:16px 0 4px}
+p{margin:8px 0}
+ul{margin:6px 0;padding-left:22px}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+pre{background:var(--code);border-radius:8px;padding:10px 12px;margin:8px 0;overflow-x:auto;font:15px/1.55 "Sarasa Mono SC","NSimSun","SimSun",monospace;white-space:pre}
+code{background:var(--code);border-radius:4px;padding:1px 4px;font:0.92em "Sarasa Mono SC","NSimSun",monospace}
+svg{display:block;max-width:100%;height:auto;margin:6px 0}
+svg text{font-family:"Segoe UI","Microsoft YaHei UI",sans-serif;fill:#1f1f1c}
+svg .th{font-size:14px;font-weight:600}
+svg .ts{font-size:12px;fill:#55544f}
+a{color:var(--acc)}
+.sheet + .sheet{margin-top:40px;border-top:3px double var(--line)}
+@media print{
+  nav{display:none}
+  body{background:#fff;font-size:12.5px}
+  main{max-width:none;padding:0}
+  pre{font-size:11.5px;break-inside:avoid}
+  h2{break-after:avoid}
+  svg{break-inside:avoid}
+  .sheet + .sheet{break-before:page;border-top:0;margin-top:0}
+}
+</style>
+</head>
+<body>
+<nav id="nav"></nav>
+<main id="main"></main>
+<script>
+const ALL = '全部';
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function inline(s) {
+  s = esc(s);
+  s = s.replace(/`([^`]+)`/g, (m, a) => '<code>' + a + '</code>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, t) => t);
+  return s;
+}
+
+function render(md) {
+  const L = md.replace(/\r/g, '').split('\n');
+  const out = [];
+  let i = 0, para = [], depth = 0;
+  const flushP = () => { if (para.length) { out.push('<p>' + para.map(inline).join('<br>') + '</p>'); para = []; } };
+  const closeUl = to => { while (depth > to) { out.push('</ul>'); depth--; } };
+  while (i < L.length) {
+    const s = L[i];
+    if (s.startsWith('```')) {
+      flushP(); closeUl(0);
+      const buf = [];
+      i++;
+      while (i < L.length && !L[i].startsWith('```')) { buf.push(L[i]); i++; }
+      i++;
+      out.push('<pre>' + esc(buf.join('\n')) + '</pre>');
+      continue;
+    }
+    if (s.trimStart().startsWith('<svg')) {
+      flushP(); closeUl(0);
+      const buf = [];
+      while (i < L.length) {
+        buf.push(L[i]);
+        if (L[i].includes('</svg>')) { i++; break; }
+        i++;
+      }
+      out.push(buf.join('\n'));
+      continue;
+    }
+    let m;
+    if ((m = s.match(/^(#{1,4})\s+(.*)$/))) {
+      flushP(); closeUl(0);
+      const n = m[1].length;
+      out.push('<h' + n + '>' + inline(m[2]) + '</h' + n + '>');
+      i++; continue;
+    }
+    if ((m = s.match(/^(\s*)[-*]\s+(.*)$/))) {
+      flushP();
+      const d = Math.floor(m[1].length / 2) + 1;
+      while (depth < d) { out.push('<ul>'); depth++; }
+      closeUl(d);
+      out.push('<li>' + inline(m[2]) + '</li>');
+      i++; continue;
+    }
+    if (s.trim() === '') { flushP(); closeUl(0); i++; continue; }
+    if (/^---+$/.test(s.trim())) { flushP(); closeUl(0); out.push('<hr>'); i++; continue; }
+    closeUl(0);
+    para.push(s);
+    i++;
+  }
+  flushP(); closeUl(0);
+  return out.join('\n');
+}
+
+const rank = n => n.startsWith('关卡') ? 0 : n.startsWith('地图') ? 1 : n.startsWith('打印') ? 2 : 3;
+const num = n => parseInt((n.match(/\d+/) || ['99'])[0], 10);
+const label = n => n.replace(/\.md$/, '');
+
+let files = [];
+let cur = decodeURIComponent(location.hash.slice(1)) || '';
+let shownKey = '';
+
+const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
+
+async function getList() {
+  const url = LOCAL ? '/api/list' : 'list.json?t=' + Date.now();
+  return (await fetch(url, { cache: 'no-store' })).json();
+}
+
+async function getFile(name, mtime) {
+  const url = LOCAL ? '/api/file?name=' + encodeURIComponent(name) : encodeURIComponent(name) + '?t=' + mtime;
+  const r = await fetch(url, { cache: 'no-store' });
+  return r.ok ? r.text() : '';
+}
+
+function drawNav() {
+  const nav = document.getElementById('nav');
+  const names = files.map(f => f.name);
+  const tabs = names.concat(names.some(n => n.startsWith('关卡')) ? [ALL] : []);
+  nav.innerHTML = tabs.map(n =>
+    '<button data-n="' + encodeURIComponent(n) + '" class="' + (n === cur ? 'on' : '') + '">' +
+    esc(n === ALL ? '全部关卡（打印用）' : label(n)) + '</button>').join('') + '<span id="stamp"></span>';
+  nav.querySelectorAll('button').forEach(b => b.onclick = () => {
+    cur = decodeURIComponent(b.dataset.n);
+    location.hash = encodeURIComponent(cur);
+    shownKey = '';
+    window.scrollTo(0, 0);
+    tick();
+  });
+}
+
+function stamp(flash) {
+  const el = document.getElementById('stamp');
+  if (!el) return;
+  el.textContent = '更新于 ' + new Date().toLocaleTimeString('de-AT');
+  if (flash) { el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 2500); }
+}
+
+async function tick() {
+  let list;
+  try {
+    list = await getList();
+  } catch (e) { return; }
+  list.sort((a, b) => rank(a.name) - rank(b.name) || num(a.name) - num(b.name) || a.name.localeCompare(b.name));
+  const namesChanged = list.map(f => f.name).join('|') !== files.map(f => f.name).join('|');
+  files = list;
+  if (!cur || (cur !== ALL && !files.some(f => f.name === cur))) cur = files.length ? files[0].name : '';
+  if (namesChanged) drawNav();
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', decodeURIComponent(b.dataset.n) === cur));
+
+  const wanted = cur === ALL ? files.filter(f => f.name.startsWith('关卡')) : files.filter(f => f.name === cur);
+  const key = cur + '#' + wanted.map(f => f.name + ':' + f.mtime).join(',');
+  if (key === shownKey) return;
+  const first = shownKey === '';
+  const parts = await Promise.all(wanted.map(f => getFile(f.name, f.mtime)));
+  document.getElementById('main').innerHTML = parts.map(t => '<section class="sheet">' + render(t) + '</section>').join('');
+  shownKey = key;
+  stamp(!first);
+}
+
+tick();
+setInterval(tick, LOCAL ? 1500 : 20000);
+</script>
+</body>
+</html>

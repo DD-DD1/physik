@@ -186,6 +186,11 @@ async function tick() {
   stamp(!first);
 }
 
+window.addEventListener('hashchange', () => {
+  const want = decodeURIComponent(location.hash.slice(1));
+  if (want && want !== cur) go(want);
+});
+
 tick();
 setInterval(tick, LOCAL ? 1500 : 20000);
 </script>

@@ -26,8 +26,9 @@ h3{font-size:16px;margin:16px 0 4px}
 p{margin:8px 0}
 ul{margin:6px 0;padding-left:22px}
 hr{border:0;border-top:1px solid var(--line);margin:16px 0}
-pre{background:var(--code);border-radius:8px;padding:10px 12px;margin:8px 0;overflow:visible;font:15px/1.55 "Sarasa Mono SC","NSimSun","SimSun",monospace;white-space:pre-wrap;overflow-wrap:anywhere}
-code{background:var(--code);border-radius:4px;padding:1px 4px;font:0.92em "Sarasa Mono SC","NSimSun",monospace}
+@font-face{font-family:"UmlautFix";src:local("Consolas"),local("Courier New");size-adjust:91%;unicode-range:U+00C0-00D6,U+00D8-00F6,U+00F8-00FF}
+pre{background:var(--code);border-radius:8px;padding:10px 12px;margin:8px 0;overflow:visible;font:15px/1.55 "Sarasa Mono SC","UmlautFix","NSimSun","SimSun",monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+code{background:var(--code);border-radius:4px;padding:1px 4px;font:0.92em "Sarasa Mono SC","UmlautFix","NSimSun",monospace}
 svg{display:block;max-width:100%;height:auto;margin:6px 0}
 svg text{font-family:"Segoe UI","Microsoft YaHei UI",sans-serif;fill:#1f1f1c}
 svg .th{font-size:14px;font-weight:600}
